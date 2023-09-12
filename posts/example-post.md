@@ -1,6 +1,5 @@
 title: Example post
 tags: test
-slug: test
 date: 2023-09-11
 
 # Example Heading

@@ -1,0 +1,8 @@
+# static site generator
+touch to create new blog file in markdown
+build markdown files into html
+template html
+create site in site folder
+get title from first hash
+create tests
+make git branch
