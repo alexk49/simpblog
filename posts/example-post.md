@@ -1,14 +1,22 @@
+---
 title: Example post
-tags: test
 slug: test
 date: 2023-09-11
+tags: test, example
+---
 
-# Example Heading
+# Dumb site example post
 
-This is a post in markdown. With some **bold** and some *italics*.
+The metadata for this post has to be structured in a particular way for it it be read properly.
 
-I also have some:
+The current metadata is listed
+```
+---
+title: Example post
+slug: test
+date: 2023-09-11
+tags: test, example
+---
+```
 
-* lists
-* of things
-* to convert
+The date should always follow the YYYY-mm-dd format, and the tags should always be in a comma separated list.
