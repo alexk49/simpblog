@@ -1,4 +1,5 @@
 import os
+import shutil
 from datetime import datetime
 
 from jinja2 import Environment, FileSystemLoader
@@ -11,9 +12,11 @@ class SimpleSiteGenerator:
         posts_dir="posts",
         output_dir="output",
         templates_dir="templates",
+        static_dir="static",
     ):
 
         self.posts_dir = posts_dir
+        self.static_dir = static_dir
         self.output_dir = output_dir
 
         templateLoader = FileSystemLoader(searchpath=templates_dir)
@@ -117,6 +120,8 @@ class SimpleSiteGenerator:
             tag_html = self.render_tag_page(tag)
             tag_file_path = os.path.join(self.output_dir, "tags", f"{tag}.html")
             self.write_file(tag_file_path, tag_html)
+
+        shutil.copytree(self.static_dir, os.path.join(self.output_dir, "static"), dirs_exist_ok=True)
 
     @staticmethod
     def write_file(file_path, content):
