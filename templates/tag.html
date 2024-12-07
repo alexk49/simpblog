@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Posts with Tag: {{ tag }}</title>
+  </head>
+  <body>
+    <h1>Posts with Tag: {{ tag }}</h1>
+    <div>
+      {% for post in posts %}
+      <div>
+        <h2><a href="/posts/{{ post.slug }}.html">{{ post.title }}</a></h2>
+        <p>{{ post.date }}</p>
+      </div>
+      {% endfor %}
+    </div>
+    <a href="/index.html">Back to Homepage</a>
+  </body>
+</html>
