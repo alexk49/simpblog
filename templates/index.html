@@ -12,9 +12,16 @@
         <h2>{{loop.index}}: <a href="posts/{{ post.slug }}.html">{{post.title}}</a> <small>{{post.date}}</small></h2>
         {{post.summary}}
     </p>
-
+    <div>
+      {% set tags = post.tags.split(",") %}
+      {% for tag in tags %}
+          {% set tag = tag.strip() %}
+          <a href="tags/{{ tag }}.html">
+              <button>{{ tag }}</button>
+          </a>
+      {% endfor %}
+    </div>
 {% endfor %}
-
 </div>
 
 {% endblock %}
