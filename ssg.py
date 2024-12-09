@@ -33,7 +33,7 @@ class SimpleSiteGenerator:
             filepath = os.path.join(self.posts_dir, markdown_post)
 
             with open(filepath, "r") as file:
-                self.posts[markdown_post] = markdown(file.read(), extras=["metadata"])
+                self.posts[markdown_post] = markdown(file.read(), extras=["metadata", "fenced-code-blocks"])
 
         self.sort_posts()
 
@@ -82,9 +82,9 @@ class SimpleSiteGenerator:
         post_metadata = self.posts[post_key].metadata
 
         post_data = {
-            "posts": self.posts[post_key],
             "title": post_metadata["title"],
             "date": post_metadata["date"],
+            "content": self.posts[post_key],
         }
 
         post_template = self.templates_env.get_template("post.html")
