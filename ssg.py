@@ -19,6 +19,9 @@ class SimpleSiteGenerator:
         self.static_dir = static_dir
         self.output_dir = output_dir
 
+        if os.path.exists(self.output_dir) is False:
+            os.mkdir(self.output_dir)
+
         templateLoader = FileSystemLoader(searchpath=templates_dir)
 
         self.templates_env = Environment(loader=templateLoader)
