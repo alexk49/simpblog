@@ -4,14 +4,8 @@
 
 <h1>My Blog</h1>
 
-<div>
-
 {% for post in posts %}
-
-    <p>
         <h2>{{loop.index}}: <a href="posts/{{ post.slug }}.html">{{post.title}}</a> <small>{{post.date}}</small></h2>
-        {{post.summary}}
-    </p>
       {% if post.tags %}
       {% set tags = post.tags.split(",") %}
       <div class="tag-container">
@@ -24,6 +18,5 @@
       </div>
       {% endif %}
 {% endfor %}
-</div>
 
 {% endblock %}

@@ -1,9 +1,4 @@
 {% extends "layout.html" %} {% block content %}
-
-<h1>{{ post.title }}</h1>
-  <small>{{ post.date }}</small>
-<p>
+<h1>{{ post.title }} - <small>{{ post.date }}</small></h1>
   {{ post.content }}
-</p>
-
 {% endblock %}
