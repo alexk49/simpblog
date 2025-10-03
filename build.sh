@@ -44,7 +44,17 @@ echo "building site"
 echo "build finished"
 
 if [[ "$DEV" == true ]]; then
-    echo "starting dev server"
-    "$PY_PATH" -m http.server --directory "$OUTPUT_DIR"
-fi
+    echo "Starting dev server at http://localhost:8000"
+    "$PY_PATH" -m http.server --directory "$OUTPUT_DIR" &
+    SERVER_PID=$!
 
+    # when script exits kill dev server
+    trap "kill $SERVER_PID" EXIT
+
+    echo "watching for changes in posts/, templates/, and static/..."
+    inotifywait -m -r -e modify,create,delete posts templates static |
+    while read path action file; do
+        echo "Change detected: $path$file ($action). Rebuilding..."
+        "$PY_PATH" ssg.py
+    done
+fi
