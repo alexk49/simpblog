@@ -33,12 +33,13 @@ class SimpleSiteGenerator:
         Get post markdown files from posts directory
         """
         for markdown_post in os.listdir(self.posts_dir):
+            if not markdown_post.endswith(".md"):
+                continue
+
             filepath = os.path.join(self.posts_dir, markdown_post)
 
             with open(filepath, "r") as file:
                 self.posts[markdown_post] = markdown(file.read(), extras=["metadata", "fenced-code-blocks"])
-
-        self.sort_posts()
 
     def sort_posts(self):
         """
@@ -83,6 +84,11 @@ class SimpleSiteGenerator:
         :return: A tuple of (slug, rendered HTML for the post).
         """
         post_metadata = self.posts[post_key].metadata
+        required = ["title", "date", "slug"]
+
+        for key in required:
+            if key not in post_metadata:
+                raise ValueError(f"Missing required metadata '{key}' in {post_key}")
 
         post_data = {
             "title": post_metadata["title"],
@@ -95,22 +101,45 @@ class SimpleSiteGenerator:
 
         return post_metadata["slug"], post_html
 
+    def copy_static(self):
+        """
+        copy static files if missing or newer
+        """
+        output_static = os.path.join(self.output_dir, "static")
+        os.makedirs(output_static, exist_ok=True)
+
+        for root, _, files in os.walk(self.static_dir):
+            for file in files:
+                src = os.path.join(root, file)
+                rel_path = os.path.relpath(src, self.static_dir)
+                dst = os.path.join(output_static, rel_path)
+
+                os.makedirs(os.path.dirname(dst), exist_ok=True)
+
+                #if not os.path.exists(dst) or os.path.getmtime(src) > os.path.getmtime(dst):
+                if self.check_for_changes(src, dst):
+                    shutil.copy2(src, dst)
+
     def generate_site(self):
         """
         Generate the static site, including homepage, posts, and tag pages.
         """
         self.get_posts()
+        self.sort_posts()
 
         home_html = self.render_homepage()
         home_output_path = os.path.join(self.output_dir, "index.html")
-        self.write_file(home_output_path, home_html)
+
+        home_template_path = os.path.join("templates", "index.html")
+        self.write_file(home_output_path, home_html, source_path=home_template_path)
 
         unique_tags = set()
 
         for post_key in self.posts:
             slug, post_html = self.render_post_page(post_key)
             post_file_path = os.path.join(self.output_dir, "posts", f"{slug}.html")
-            self.write_file(post_file_path, post_html)
+            source_path = os.path.join(self.posts_dir, post_key)
+            self.write_file(post_file_path, post_html, source_path=source_path)
 
             unique_tags.update(
                 tag.strip() for tag in self.posts[post_key].metadata["tags"].split(",")
@@ -119,29 +148,56 @@ class SimpleSiteGenerator:
         sorted_tags = sorted(unique_tags)
 
         for tag in sorted_tags:
-            print(tag)
+            print(f"creating page for {tag}")
             tag_html = self.render_tag_page(tag)
             tag_file_path = os.path.join(self.output_dir, "tags", f"{tag}.html")
             self.write_file(tag_file_path, tag_html)
 
-        shutil.copytree(self.static_dir, os.path.join(self.output_dir, "static"), dirs_exist_ok=True)
+        #shutil.copytree(self.static_dir, os.path.join(self.output_dir, "static"), dirs_exist_ok=True)
+        self.copy_static()
 
-    @staticmethod
-    def write_file(file_path, content):
+        print(f"Site generated with {len(self.posts)} posts, {len(sorted_tags)} tags.")
+
+    def write_file(self, file_path, content, source_path=None):
         """
         Write content to a file, creating directories as needed.
+        Only writes if the source is newer (when a source_path is provided).
 
         :param file_path: The path to the file to write.
         :param content: The content to write to the file.
+        :param source_path: Optional path to the source file
         """
+        if source_path and not self.check_for_changes(source_path, file_path):
+            print(f"No changes detected for {source_path}, leaving {file_path}")
+            return
+
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        print(f"writing file to {file_path}")
         with open(file_path, "w") as file:
             file.write(content)
+
+    @staticmethod
+    def check_for_changes(source_path, output_path):
+        """
+        Check if output needs to be rebuilt based on file modification times.
+
+        :param source_path: Path to the source file (markdown/template/etc.)
+        :param output_path: Path to the generated file in output
+        :return: True if rebuild needed, False otherwise
+        """
+        if not os.path.exists(output_path):
+            print(f"no output path exists at {output_path}, building file")
+            return True
+
+        if not os.path.exists(source_path):
+            print("no source path found, forcing rebuild")
+            return True
+
+        return os.path.getmtime(source_path) > os.path.getmtime(output_path)
 
 
 def main():
     ssg = SimpleSiteGenerator()
-
     ssg.generate_site()
 
 
