@@ -1,8 +1,12 @@
+:root {
+  --black-font: #2d3032;
+}
+
 body {
   line-height: 1.5;
-  padding: 4em 1em;
   font-family: "Helvetica", "Arial", sans-serif;
-  color: #2d3032;
+  color: var(--black-font);
+  padding: 1em;
 }
 
 main {
@@ -43,6 +47,52 @@ pre {
 a {
   color: #e81c4f;
 }
+a:hover {
+  text-decoration: underline;
+}
+
+/* navbar */
+
+.nav-logo {
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin-left: 1rem;
+  font-size: 32px;
+}
+
+nav a  {
+  color: var(--black-font);
+  text-decoration: none;
+}
+
+nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+header h1 {
+  font-size: 40px;
+}
+
+header a.title {
+  text-decoration: none;
+  font-weight: bold;
+}
+
+header ul {
+  list-style: none;
+  display: flex;
+  flex-direction: row;
+  margin: 20px 0;
+  padding-left: 0;
+}
+
+header ul li {
+  margin-right: 1rem;
+}
+
+/* styles for tags */
 
 .tag-list {
     list-style-type: none;

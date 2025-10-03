@@ -1,5 +1,7 @@
+import argparse
 import os
 import shutil
+import time
 from datetime import datetime
 
 from jinja2 import Environment, FileSystemLoader
@@ -13,7 +15,10 @@ class SimpleSiteGenerator:
         output_dir="output",
         templates_dir="templates",
         static_dir="static",
+        full_rebuild=False,
     ):
+
+        self.full_rebuild = full_rebuild
 
         self.posts_dir = posts_dir
         self.static_dir = static_dir
@@ -120,10 +125,37 @@ class SimpleSiteGenerator:
                 if self.check_for_changes(src, dst):
                     shutil.copy2(src, dst)
 
+    def check_tag_for_changes(self, tag_template_path, tag_file_path) -> bool:
+        """
+        returns true if changes detected
+        """
+        if self.check_for_changes(tag_template_path, tag_file_path):
+            return True
+
+        # Check if any post is newer than tag page
+        for post_key in self.posts:
+            post_path = os.path.join(self.posts_dir, post_key)
+            if self.check_for_changes(post_path, tag_file_path):
+                return True
+        return False
+
+    def layout_recently_changed(self, minutes=1):
+        layout_path = os.path.join("templates", "layout.html")
+        if not os.path.exists(layout_path):
+            return False
+
+        mtime = os.path.getmtime(layout_path)
+        now = time.time()
+        return (now - mtime) < (minutes * 60)
+
     def generate_site(self):
         """
         Generate the static site, including homepage, posts, and tag pages.
         """
+        if self.layout_recently_changed():
+            print("layout changed forcing full rebuild")
+            self.full_rebuild = True
+
         self.get_posts()
         self.sort_posts()
 
@@ -146,14 +178,18 @@ class SimpleSiteGenerator:
             )
 
         sorted_tags = sorted(unique_tags)
+        tag_template_path = os.path.join("templates", "tag.html")
 
         for tag in sorted_tags:
-            print(f"creating page for {tag}")
+            print(f"checking for changes for {tag}")
             tag_html = self.render_tag_page(tag)
             tag_file_path = os.path.join(self.output_dir, "tags", f"{tag}.html")
-            self.write_file(tag_file_path, tag_html)
 
-        #shutil.copytree(self.static_dir, os.path.join(self.output_dir, "static"), dirs_exist_ok=True)
+            if self.check_tag_for_changes(tag_template_path, tag_file_path):
+                self.write_file(tag_file_path, tag_html)
+            else:
+                print(f"no changes detected for tag {tag}")
+
         self.copy_static()
 
         print(f"Site generated with {len(self.posts)} posts, {len(sorted_tags)} tags.")
@@ -176,8 +212,7 @@ class SimpleSiteGenerator:
         with open(file_path, "w") as file:
             file.write(content)
 
-    @staticmethod
-    def check_for_changes(source_path, output_path):
+    def check_for_changes(self, source_path, output_path):
         """
         Check if output needs to be rebuilt based on file modification times.
 
@@ -185,6 +220,9 @@ class SimpleSiteGenerator:
         :param output_path: Path to the generated file in output
         :return: True if rebuild needed, False otherwise
         """
+        if self.full_rebuild:
+            return True
+
         if not os.path.exists(output_path):
             print(f"no output path exists at {output_path}, building file")
             return True
@@ -197,7 +235,11 @@ class SimpleSiteGenerator:
 
 
 def main():
-    ssg = SimpleSiteGenerator()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--force", action="store_true", default=False, help="Force full rebuild")
+    args = parser.parse_args()
+
+    ssg = SimpleSiteGenerator(full_rebuild=args.force)
     ssg.generate_site()
 
 
