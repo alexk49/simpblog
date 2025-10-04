@@ -12,6 +12,7 @@ class SimpleSiteGenerator:
     def __init__(
         self,
         posts_dir="posts",
+        pages_dir="pages",
         output_dir="output",
         templates_dir="templates",
         static_dir="static",
@@ -21,6 +22,7 @@ class SimpleSiteGenerator:
         self.full_rebuild = full_rebuild
 
         self.posts_dir = posts_dir
+        self.pages_dir = pages_dir
         self.static_dir = static_dir
         self.output_dir = output_dir
 
@@ -32,6 +34,7 @@ class SimpleSiteGenerator:
         self.templates_env = Environment(loader=templateLoader)
 
         self.posts = {}
+        self.pages = {}
 
     def get_posts(self):
         """
@@ -56,6 +59,38 @@ class SimpleSiteGenerator:
     def get_post_date(self, post):
         # Extracts and parses the date for sorting
         return datetime.strptime(self.posts[post].metadata["date"], "%Y-%m-%d")
+
+    def get_pages(self):
+        """
+        load pages dir
+        """
+        if not os.path.exists(self.pages_dir):
+            return
+
+        for markdown_page in os.listdir(self.pages_dir):
+            if not markdown_page.endswith(".md"):
+                continue
+
+            filepath = os.path.join(self.pages_dir, markdown_page)
+            with open(filepath, "r") as file:
+                self.pages[markdown_page] = markdown(file.read(), extras=["metadata", "fenced-code-blocks"])
+
+    def render_page(self, page_key):
+        """
+        render an individual static page - about etc
+        """
+        page_metadata = self.pages[page_key].metadata
+        print(page_metadata)
+        print(self.pages[page_key])
+        page_data = {
+            "title": page_metadata.get("title"),
+            "slug": page_metadata.get("slug"),
+            "content": self.pages[page_key],
+        }
+
+        page_template = self.templates_env.get_template("page.html")
+        page_html = page_template.render(page=page_data)
+        return page_metadata.get("slug", "page"), page_html
 
     def render_homepage(self):
         """
@@ -151,7 +186,7 @@ class SimpleSiteGenerator:
 
     def generate_site(self):
         """
-        Generate the static site, including homepage, posts, and tag pages.
+        Generate the static site, including homepage, pages, posts, and tag pages.
         """
         if self.layout_recently_changed():
             print("layout changed forcing full rebuild")
@@ -159,12 +194,21 @@ class SimpleSiteGenerator:
 
         self.get_posts()
         self.sort_posts()
+        self.get_pages()
 
         home_html = self.render_homepage()
         home_output_path = os.path.join(self.output_dir, "index.html")
 
         home_template_path = os.path.join("templates", "index.html")
         self.write_file(home_output_path, home_html, source_path=home_template_path)
+
+        page_template_path = os.path.join("templates", "page.html")
+        print("writing pages")
+        for page_key in self.pages:
+            slug, page_html = self.render_page(page_key)
+            page_file_path = os.path.join(self.output_dir, f"{slug}.html")
+            source_path = os.path.join("pages", page_key)
+            self.write_file(page_file_path, page_html, source_path=source_path)
 
         unique_tags = set()
 
