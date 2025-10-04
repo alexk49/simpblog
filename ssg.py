@@ -23,6 +23,7 @@ class SimpleSiteGenerator:
 
         self.posts_dir = posts_dir
         self.pages_dir = pages_dir
+        self.templates_dir = templates_dir
         self.static_dir = static_dir
         self.output_dir = output_dir
 
@@ -37,9 +38,6 @@ class SimpleSiteGenerator:
         self.pages = {}
 
     def get_posts(self):
-        """
-        Get post markdown files from posts directory
-        """
         for markdown_post in os.listdir(self.posts_dir):
             if not markdown_post.endswith(".md"):
                 continue
@@ -50,9 +48,6 @@ class SimpleSiteGenerator:
                 self.posts[markdown_post] = markdown(file.read(), extras=["metadata", "fenced-code-blocks"])
 
     def sort_posts(self):
-        """
-        Sort posts in date order
-        """
         sorted_posts = sorted(self.posts, key=self.get_post_date, reverse=True)
         self.posts = {post: self.posts[post] for post in sorted_posts}
 
@@ -61,9 +56,6 @@ class SimpleSiteGenerator:
         return datetime.strptime(self.posts[post].metadata["date"], "%Y-%m-%d")
 
     def get_pages(self):
-        """
-        load pages dir
-        """
         if not os.path.exists(self.pages_dir):
             return
 
@@ -80,8 +72,6 @@ class SimpleSiteGenerator:
         render an individual static page - about etc
         """
         page_metadata = self.pages[page_key].metadata
-        print(page_metadata)
-        print(self.pages[page_key])
         page_data = {
             "title": page_metadata.get("title"),
             "slug": page_metadata.get("slug"),
@@ -157,40 +147,14 @@ class SimpleSiteGenerator:
 
                 os.makedirs(os.path.dirname(dst), exist_ok=True)
 
-                #if not os.path.exists(dst) or os.path.getmtime(src) > os.path.getmtime(dst):
                 if self.check_for_changes(src, dst):
                     shutil.copy2(src, dst)
-
-    def check_tag_for_changes(self, tag_template_path, tag_file_path) -> bool:
-        """
-        returns true if changes detected
-        """
-        if self.check_for_changes(tag_template_path, tag_file_path):
-            return True
-
-        # Check if any post is newer than tag page
-        for post_key in self.posts:
-            post_path = os.path.join(self.posts_dir, post_key)
-            if self.check_for_changes(post_path, tag_file_path):
-                return True
-        return False
-
-    def layout_recently_changed(self, minutes=1):
-        layout_path = os.path.join("templates", "layout.html")
-        if not os.path.exists(layout_path):
-            return False
-
-        mtime = os.path.getmtime(layout_path)
-        now = time.time()
-        return (now - mtime) < (minutes * 60)
 
     def generate_site(self):
         """
         Generate the static site, including homepage, pages, posts, and tag pages.
         """
-        if self.layout_recently_changed():
-            print("layout changed forcing full rebuild")
-            self.full_rebuild = True
+        layout_path = os.path.join("templates", "layout.html")
 
         self.get_posts()
         self.sort_posts()
@@ -200,28 +164,43 @@ class SimpleSiteGenerator:
         home_output_path = os.path.join(self.output_dir, "index.html")
 
         home_template_path = os.path.join("templates", "index.html")
-        self.write_file(home_output_path, home_html, source_path=home_template_path)
+        self.write_file(home_output_path, home_html, source_paths=[home_template_path, layout_path])
 
-        page_template_path = os.path.join("templates", "page.html")
         print("writing pages")
+        page_template_path = os.path.join("templates", "page.html")
+
         for page_key in self.pages:
             slug, page_html = self.render_page(page_key)
             page_file_path = os.path.join(self.output_dir, f"{slug}.html")
-            source_path = os.path.join("pages", page_key)
-            self.write_file(page_file_path, page_html, source_path=source_path)
 
+            source_paths = [
+                os.path.join(self.pages_dir, page_key),
+                page_template_path,
+                layout_path,
+            ]
+            self.write_file(page_file_path, page_html, source_paths=source_paths)
+
+        print("creating posts")
         unique_tags = set()
+        post_template_path = os.path.join(self.templates_dir, "post.html")
 
         for post_key in self.posts:
             slug, post_html = self.render_post_page(post_key)
             post_file_path = os.path.join(self.output_dir, "posts", f"{slug}.html")
-            source_path = os.path.join(self.posts_dir, post_key)
-            self.write_file(post_file_path, post_html, source_path=source_path)
+
+            source_paths = [
+                os.path.join(self.posts_dir, post_key),
+                post_template_path,
+                layout_path,
+            ]
+
+            self.write_file(post_file_path, post_html, source_paths=source_paths)
 
             unique_tags.update(
                 tag.strip() for tag in self.posts[post_key].metadata["tags"].split(",")
             )
 
+        print("creating tag pages")
         sorted_tags = sorted(unique_tags)
         tag_template_path = os.path.join("templates", "tag.html")
 
@@ -230,26 +209,23 @@ class SimpleSiteGenerator:
             tag_html = self.render_tag_page(tag)
             tag_file_path = os.path.join(self.output_dir, "tags", f"{tag}.html")
 
-            if self.check_tag_for_changes(tag_template_path, tag_file_path):
-                self.write_file(tag_file_path, tag_html)
-            else:
-                print(f"no changes detected for tag {tag}")
+            # Check dependencies for tag pages — template, layout, and all posts
+            post_sources = [os.path.join(self.posts_dir, p) for p in self.posts]
+            source_paths = [tag_template_path, layout_path] + post_sources
+
+            self.write_file(tag_file_path, tag_html, source_paths=source_paths)
 
         self.copy_static()
 
         print(f"Site generated with {len(self.posts)} posts, {len(sorted_tags)} tags.")
 
-    def write_file(self, file_path, content, source_path=None):
+    def write_file(self, file_path, content, source_paths=None):
         """
         Write content to a file, creating directories as needed.
-        Only writes if the source is newer (when a source_path is provided).
-
-        :param file_path: The path to the file to write.
-        :param content: The content to write to the file.
-        :param source_path: Optional path to the source file
+        Only writes if the source is newer (when source_paths are provided).
         """
-        if source_path and not self.check_for_changes(source_path, file_path):
-            print(f"No changes detected for {source_path}, leaving {file_path}")
+        if source_paths and not self.check_for_changes(source_paths, file_path):
+            print(f"No changes detected for {file_path}")
             return
 
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
@@ -257,26 +233,35 @@ class SimpleSiteGenerator:
         with open(file_path, "w") as file:
             file.write(content)
 
-    def check_for_changes(self, source_path, output_path):
+    def check_for_changes(self, source_paths, output_path):
         """
-        Check if output needs to be rebuilt based on file modification times.
+        Check if output needs to be rebuilt based on modification times.
 
-        :param source_path: Path to the source file (markdown/template/etc.)
-        :param output_path: Path to the generated file in output
-        :return: True if rebuild needed, False otherwise
+        :param source_paths: A single path or list/tuple of source files.
+        :param output_path: Path to the generated file in output.
+        :return: True if rebuild needed, False otherwise.
         """
         if self.full_rebuild:
             return True
+
+        if isinstance(source_paths, (str, os.PathLike)):
+            source_paths = [source_paths]
 
         if not os.path.exists(output_path):
             print(f"no output path exists at {output_path}, building file")
             return True
 
-        if not os.path.exists(source_path):
-            print("no source path found, forcing rebuild")
-            return True
+        for src in source_paths:
+            if not os.path.exists(src):
+                print(f"source not found ({src}), forcing rebuild")
+                return True
 
-        return os.path.getmtime(source_path) > os.path.getmtime(output_path)
+            if os.path.getmtime(src) > os.path.getmtime(output_path):
+                print(f"{src} is newer than {output_path}, rebuilding")
+                return True
+
+        # no rebuild needed
+        return False
 
 
 def main():

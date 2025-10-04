@@ -51,8 +51,8 @@ if [[ "$DEV" == true ]]; then
     # when script exits kill dev server
     trap "kill $SERVER_PID" EXIT
 
-    echo "watching for changes in posts/, templates/, and static/..."
-    inotifywait -m -r -e modify,create,delete posts templates static |
+    echo "watching for changes in pages/, posts/, templates/, and static/..."
+    inotifywait -m -r -e modify,create,delete pages posts templates static |
     while read path action file; do
         echo "Change detected: $path$file ($action). Rebuilding..."
         "$PY_PATH" ssg.py
