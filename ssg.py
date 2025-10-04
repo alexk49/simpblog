@@ -98,6 +98,7 @@ class SimpleSiteGenerator:
         post_data = {
             "title": post_metadata["title"],
             "date": post_metadata["date"],
+            "tags": post_metadata["tags"],
             "content": self.posts[post_key],
         }
 

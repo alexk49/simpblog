@@ -1,5 +1,16 @@
 {% extends "layout.html" %} {% block content %}
 <h1>{{ post.title }}</h1>
+  {% if post.tags %}
+  {% set tags = post.tags.split(",") %}
+  <div class="tag-container">
+    <ul class="tag-list">
+    {% for tag in tags %}
+        {% set tag = tag.strip() %}
+        <li class="tag"><a class="tag-link" href="/tags/{{ tag }}.html">{{ tag }}</a></li>
+    {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
   {{ post.content }}
   <small>{{ post.date }}</small>
 {% endblock %}

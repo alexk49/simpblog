@@ -1,8 +1,11 @@
 {% extends "layout.html" %}
 
 {% block content %}
+  <h1>Posts</h1>
+  <div class="post-list">
 {% for post in posts %}
-        <h2>{{loop.index}}: <a href="posts/{{ post.slug }}.html">{{post.title}}</a> <small>{{post.date}}</small></h2>
+    <article>
+      <a class="post-link" href="posts/{{ post.slug }}.html">{{post.title}}</a> <small>{{post.date}}</small>
       {% if post.tags %}
       {% set tags = post.tags.split(",") %}
       <div class="tag-container">
@@ -14,6 +17,7 @@
         </ul>
       </div>
       {% endif %}
+    </article>
 {% endfor %}
-
+  </div>
 {% endblock %}

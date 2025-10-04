@@ -1,5 +1,6 @@
 :root {
   --black-font: #2d3032;
+  --bolder-black-font: #333;
 }
 
 body {
@@ -15,12 +16,13 @@ main {
   align-items: center;
   margin: 0 auto;
   max-width: 50em;
+  font-size: 18px;
 }
 
 h1,
 h2,
 strong {
-  color: #333;
+  color: var(--bolder-black-font)
 }
 
 h2 {
@@ -42,6 +44,7 @@ code {
 pre {
   padding: 1em;
   border-left: 2px solid #69c;
+  font-size: smaller;
 }
 
 a {
@@ -92,7 +95,27 @@ header ul li {
   margin-right: 1rem;
 }
 
+/* post listings */
+
+.post-list {
+  margin-bottom: 1em;
+}
+
+.post-list article {
+  padding: 0.5em;
+}
+
+.post-link {
+  font-size: large;
+  font-weight: bold;
+  color: var(--bolder-black-font)
+}
+
 /* styles for tags */
+
+.tag-container {
+  margin-top: 0;
+}
 
 .tag-list {
     list-style-type: none;

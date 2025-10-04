@@ -1,15 +1,12 @@
 {% extends "layout.html" %} {% block content %}
-    <title>Posts with Tag: {{ tag }}</title>
-  </head>
   <body>
-    <h1>Posts with Tag: {{ tag }}</h1>
-    <div>
-      {% for post in posts %}
-      <div>
-        <h2><a href="/posts/{{ post.slug }}.html">{{ post.title }}</a></h2>
-        <p>{{ post.date }}</p>
-      </div>
-      {% endfor %}
+    <h1>{{ tag }}</h1>
+  <div class="post-list">
+    {% for post in posts %}
+    <article>
+      <a class="post-link" href="/posts/{{ post.slug }}.html">{{post.title}}</a> <small>{{post.date}}</small>
+    </article>
+    {% endfor %}
     </div>
-    <a href="/index.html">Back to Homepage</a>
+    <a href="/index.html">Back to home</a>
 {% endblock %}
