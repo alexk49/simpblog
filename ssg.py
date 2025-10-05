@@ -1,6 +1,10 @@
 import argparse
 import os
 import shutil
+import subprocess
+import threading
+from http.server import SimpleHTTPRequestHandler
+from socketserver import TCPServer
 from datetime import datetime
 
 from jinja2 import Environment, FileSystemLoader
@@ -34,17 +38,17 @@ class SimpleSiteGenerator:
         self.static_dir = static_dir
         self.output_dir = output_dir
 
-        if os.path.exists(self.output_dir) is False:
-            os.mkdir(self.output_dir)
-
-        templateLoader = FileSystemLoader(searchpath=templates_dir)
-
+        templateLoader = FileSystemLoader(searchpath=self.templates_dir)
         self.templates_env = Environment(loader=templateLoader)
 
         self.posts = {}
         self.pages = {}
 
     def get_posts(self):
+        if not os.path.exists(self.posts_dir):
+            print(f"no posts dir found at {self.posts_dir}")
+            return
+
         for post_file in os.listdir(self.posts_dir):
             if not (post_file.endswith(".md") or post_file.endswith(".html")):
                 continue
@@ -168,6 +172,10 @@ class SimpleSiteGenerator:
         """
         copy static files if missing or newer
         """
+        if not os.path.exists(self.static_dir):
+            print(f"no static dir found to copy at {self.static_dir}")
+            return
+
         output_static = os.path.join(self.output_dir, "static")
         os.makedirs(output_static, exist_ok=True)
 
@@ -182,24 +190,23 @@ class SimpleSiteGenerator:
                 if self.check_for_changes(src, dst):
                     shutil.copy2(src, dst)
 
-    def generate_site(self):
-        """
-        Generate the static site, including homepage, pages, posts, and tag pages.
-        """
-        layout_path = os.path.join("templates", "layout.html")
-
-        self.get_posts()
-        self.sort_posts()
-        self.get_pages()
+    def write_homepage(self, layout_path):
+        homepage_template_path = os.path.join(self.templates_dir, "index.html")
+        if not os.path.exists(homepage_template_path):
+            print(f"index.html page not found in {self.templates_dir}")
+            return
 
         home_html = self.render_homepage()
-        home_output_path = os.path.join(self.output_dir, "index.html")
+        homepage_output_path = os.path.join(self.output_dir, "index.html")
 
-        home_template_path = os.path.join("templates", "index.html")
-        self.write_file(home_output_path, home_html, source_paths=[home_template_path, layout_path])
+        self.write_file(homepage_output_path, home_html, source_paths=[homepage_template_path, layout_path])
+
+    def write_pages(self, page_template_path, layout_path):
+        if not os.path.exists(page_template_path):
+            print(f"no page template path at: {page_template_path}")
+            return
 
         print("writing pages")
-        page_template_path = os.path.join("templates", "page.html")
 
         for page_key in self.pages:
             slug, page_html = self.render_page(page_key)
@@ -212,9 +219,12 @@ class SimpleSiteGenerator:
             ]
             self.write_file(page_file_path, page_html, source_paths=source_paths)
 
+    def write_post_pages(self, post_template_path, layout_path):
+        if not os.path.exists(post_template_path):
+            print(f"no post template found at: {post_template_path}")
+            return
+
         print("creating posts")
-        unique_tags = set()
-        post_template_path = os.path.join(self.templates_dir, "post.html")
 
         for post_key in self.posts:
             slug, post_html = self.render_post_page(post_key)
@@ -228,15 +238,21 @@ class SimpleSiteGenerator:
 
             self.write_file(post_file_path, post_html, source_paths=source_paths)
 
+    def get_tags(self):
+        unique_tags = set()
+        print("searching for tags")
+
+        for post_key in self.posts:
             unique_tags.update(
                 tag.strip() for tag in self.posts[post_key].metadata["tags"].split(",")
             )
-
-        print("creating tag pages")
         sorted_tags = sorted(unique_tags)
-        tag_template_path = os.path.join("templates", "tag.html")
+        return sorted_tags
 
-        for tag in sorted_tags:
+    def write_tag_pages(self, tags, layout_path):
+        tag_template_path = os.path.join(self.templates_dir, "tag.html")
+
+        for tag in tags:
             print(f"checking for changes for {tag}")
             tag_html = self.render_tag_page(tag)
             tag_file_path = os.path.join(self.output_dir, "tags", f"{tag}.html")
@@ -247,9 +263,32 @@ class SimpleSiteGenerator:
 
             self.write_file(tag_file_path, tag_html, source_paths=source_paths)
 
+    def generate_site(self):
+        """
+        Generate the static site, including homepage, pages, posts, and tag pages.
+        """
+        layout_path = os.path.join(self.templates_dir, "layout.html")
+
+        self.get_posts()
+        self.sort_posts()
+        self.get_pages()
+
+        self.write_homepage(layout_path)
+
+        page_template_path = os.path.join(self.templates_dir, "page.html")
+
+        self.write_pages(page_template_path=page_template_path, layout_path=layout_path)
+
+        post_template_path = os.path.join(self.templates_dir, "post.html")
+
+        self.write_post_pages(post_template_path=post_template_path, layout_path=layout_path)
+
+        tags = self.get_tags()
+        self.write_tag_pages(tags=tags, layout_path=layout_path)
+
         self.copy_static()
 
-        print(f"Site generated with {len(self.posts)} posts, {len(sorted_tags)} tags.")
+        print(f"Site generated with {len(self.posts)} posts, {len(tags)} tags.")
 
     def write_file(self, file_path, content, source_paths=None):
         """
@@ -296,6 +335,58 @@ class SimpleSiteGenerator:
         return False
 
 
+def start_dev_server(directory, port=8000):
+    os.chdir(directory)
+    handler = SimpleHTTPRequestHandler
+    httpd = TCPServer(("localhost", port), handler)
+
+    print(f"Serving at http://localhost:{port} (Ctrl+C to stop)\n")
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        print("\nStopping server...")
+    finally:
+        httpd.server_close()
+
+
+def inotifywait_exists():
+    return shutil.which("inotifywait") is not None
+
+
+def watch_with_inotify(dir_paths, ssg):
+    """Use inotifywait to rebuild when files change."""
+    print("Watching for changes in pages/, posts/, templates/, and static/ ")
+
+    watch_paths = [
+        dir_paths[key]
+        for key in ("pages_dir", "posts_dir", "templates_dir", "static_dir")
+        if os.path.exists(dir_paths[key])
+    ]
+
+    if not watch_paths:
+        print("No watchable directories found.")
+        return
+
+    cmd = ["inotifywait", "-m", "-r", "-e", "modify,create,delete"] + watch_paths
+    process = subprocess.Popen(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+    )
+
+    try:
+        for line in process.stdout:
+            line = line.strip()
+            if not line:
+                continue
+            print(f"Change detected: {line}")
+            try:
+                ssg.generate_site()
+            except subprocess.CalledProcessError as e:
+                print(f"Build failed: {e}")
+    except KeyboardInterrupt:
+        print("Stopping watcher...")
+        process.terminate()
+
+
 def main():
     parser = argparse.ArgumentParser(description="Simple static site generator")
     parser.add_argument(
@@ -308,35 +399,67 @@ def main():
     parser.add_argument(
         "--force",
         action="store_true",
+        default=False,
         help="Force full rebuild even if files haven't changed",
+    )
+    parser.add_argument(
+        "--dev",
+        action="store_true",
+        default=False,
+        help="Run build, start dev server, and optionally watch for changes",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="Port for the dev server (default: 8000)",
     )
     args = parser.parse_args()
 
     site_dir = os.path.abspath(args.site_dir)
 
-    posts_dir = os.path.join(site_dir, "posts")
-    pages_dir = os.path.join(site_dir, "pages")
-    templates_dir = os.path.join(site_dir, "templates")
-    static_dir = os.path.join(site_dir, "static")
-    output_dir = os.path.join(site_dir, "output")
+    dir_paths = {
+        "posts_dir": os.path.join(site_dir, "posts"),
+        "pages_dir": os.path.join(site_dir, "pages"),
+        "templates_dir": os.path.join(site_dir, "templates"),
+        "static_dir": os.path.join(site_dir, "static"),
+        "output_dir": os.path.join(site_dir, "output"),
+    }
 
-    print(f"Building site from: {site_dir}")
-    print(f"posts: {posts_dir}")
-    print(f"pages: {pages_dir}")
-    print(f"templates: {templates_dir}")
-    print(f"static: {static_dir}")
-    print(f"output: {output_dir}")
+    print(f"Building site from: {site_dir} to {dir_paths["output_dir"]}")
 
     ssg = SimpleSiteGenerator(
-        posts_dir=posts_dir,
-        pages_dir=pages_dir,
-        output_dir=output_dir,
-        templates_dir=templates_dir,
-        static_dir=static_dir,
+        posts_dir=dir_paths["posts_dir"],
+        pages_dir=dir_paths["pages_dir"],
+        output_dir=dir_paths["output_dir"],
+        templates_dir=dir_paths["templates_dir"],
+        static_dir=dir_paths["static_dir"],
         full_rebuild=args.force,
     )
 
     ssg.generate_site()
+
+    if args.dev:
+        # Start HTTP server in background thread
+        server_thread = threading.Thread(
+            target=start_dev_server, args=(dir_paths["output_dir"], args.port), daemon=True
+        )
+        server_thread.start()
+
+        if inotifywait_exists():
+            print("Detected inotifywait: enabling file watching\n")
+            watch_with_inotify(dir_paths, ssg)
+        else:
+            print("inotifywait not found. Skipping auto-rebuild.")
+            print("You can install it with: sudo apt install inotify-tools")
+            print("Dev server running at http://localhost:8000 (Ctrl+C to stop)\n")
+
+            try:
+                while server_thread.is_alive():
+                    server_thread.join(1)
+            except KeyboardInterrupt:
+                print("\nStopping dev server...")
+
 
 if __name__ == "__main__":
     main()
