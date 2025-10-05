@@ -1,7 +1,6 @@
 import argparse
 import os
 import shutil
-import time
 from datetime import datetime
 
 from jinja2 import Environment, FileSystemLoader
@@ -265,13 +264,46 @@ class SimpleSiteGenerator:
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--force", action="store_true", default=False, help="Force full rebuild")
+    parser = argparse.ArgumentParser(description="Simple static site generator")
+    parser.add_argument(
+        "-s",
+        "--site-dir",
+        type=str,
+        default=".",
+        help="Root directory for site content (default: current directory)",
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Force full rebuild even if files haven't changed",
+    )
     args = parser.parse_args()
 
-    ssg = SimpleSiteGenerator(full_rebuild=args.force)
-    ssg.generate_site()
+    site_dir = os.path.abspath(args.site_dir)
 
+    posts_dir = os.path.join(site_dir, "posts")
+    pages_dir = os.path.join(site_dir, "pages")
+    templates_dir = os.path.join(site_dir, "templates")
+    static_dir = os.path.join(site_dir, "static")
+    output_dir = os.path.join(site_dir, "output")
+
+    print(f"Building site from: {site_dir}")
+    print(f"posts: {posts_dir}")
+    print(f"pages: {pages_dir}")
+    print(f"templates: {templates_dir}")
+    print(f"static: {static_dir}")
+    print(f"output: {output_dir}")
+
+    ssg = SimpleSiteGenerator(
+        posts_dir=posts_dir,
+        pages_dir=pages_dir,
+        output_dir=output_dir,
+        templates_dir=templates_dir,
+        static_dir=static_dir,
+        full_rebuild=args.force,
+    )
+
+    ssg.generate_site()
 
 if __name__ == "__main__":
     main()
