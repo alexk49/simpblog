@@ -7,6 +7,14 @@ from jinja2 import Environment, FileSystemLoader
 from markdown2 import markdown
 
 
+class HTMLFile(str):
+    """handle html files like markdown files"""
+    def __new__(cls, value, metadata):
+        obj = str.__new__(cls, value)
+        obj.metadata = metadata
+        return obj
+
+
 class SimpleSiteGenerator:
     def __init__(
         self,
@@ -37,14 +45,27 @@ class SimpleSiteGenerator:
         self.pages = {}
 
     def get_posts(self):
-        for markdown_post in os.listdir(self.posts_dir):
-            if not markdown_post.endswith(".md"):
+        for post_file in os.listdir(self.posts_dir):
+            if not (post_file.endswith(".md") or post_file.endswith(".html")):
                 continue
 
-            filepath = os.path.join(self.posts_dir, markdown_post)
-
+            filepath = os.path.join(self.posts_dir, post_file)
             with open(filepath, "r") as file:
-                self.posts[markdown_post] = markdown(file.read(), extras=["metadata", "fenced-code-blocks"])
+                content = file.read()
+
+            if post_file.endswith(".md"):
+                post_content = markdown(content, extras=["metadata", "fenced-code-blocks"])
+            else:
+                html_metadata = {
+                    "title": os.path.splitext(post_file)[0].replace("-", " ").title(),
+                    "date": datetime.fromtimestamp(os.path.getmtime(filepath)).strftime("%Y-%m-%d"),
+                    "slug": os.path.splitext(post_file)[0],
+                    "tags": "",
+                }
+
+                post_content = HTMLFile(content, html_metadata)
+
+            self.posts[post_file] = post_content
 
     def sort_posts(self):
         sorted_posts = sorted(self.posts, key=self.get_post_date, reverse=True)
@@ -58,13 +79,25 @@ class SimpleSiteGenerator:
         if not os.path.exists(self.pages_dir):
             return
 
-        for markdown_page in os.listdir(self.pages_dir):
-            if not markdown_page.endswith(".md"):
+        for page_file in os.listdir(self.pages_dir):
+            if not (page_file.endswith(".md") or page_file.endswith(".html")):
                 continue
 
-            filepath = os.path.join(self.pages_dir, markdown_page)
+            filepath = os.path.join(self.pages_dir, page_file)
             with open(filepath, "r") as file:
-                self.pages[markdown_page] = markdown(file.read(), extras=["metadata", "fenced-code-blocks"])
+                content = file.read()
+
+            if page_file.endswith(".md"):
+                page_content = markdown(content, extras=["metadata", "fenced-code-blocks"])
+            else:
+                html_metadata = {
+                    "title": os.path.splitext(page_file)[0].replace("-", " ").title(),
+                    "slug": os.path.splitext(page_file)[0],
+                }
+
+                page_content = HTMLFile(content, html_metadata)
+
+            self.pages[page_file] = page_content
 
     def render_page(self, page_key):
         """
