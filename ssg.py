@@ -210,7 +210,11 @@ class SimpleSiteGenerator:
 
         for page_key in self.pages:
             slug, page_html = self.render_page(page_key)
-            page_file_path = os.path.join(self.output_dir, f"{slug}.html")
+
+            if slug == "index":
+                page_file_path = os.path.join(self.output_dir, "index.html")
+            else:
+                page_file_path = os.path.join(self.output_dir, f"{slug}.html")
 
             source_paths = [
                 os.path.join(self.pages_dir, page_key),
@@ -263,6 +267,30 @@ class SimpleSiteGenerator:
 
             self.write_file(tag_file_path, tag_html, source_paths=source_paths)
 
+    def check_homepage_paths(self):
+        """
+        homepage can be either templates/index.html or in pages
+
+        check for conflicts if both
+        """
+        homepage_content_path_md = os.path.join(self.pages_dir, "index.md")
+        homepage_content_path_html = os.path.join(self.pages_dir, "index.html")
+        homepage_template_path = os.path.join(self.templates_dir, "index.html")
+
+        content_homepage_exists = (
+            os.path.exists(homepage_content_path_md)
+            or os.path.exists(homepage_content_path_html)
+        )
+        template_homepage_exists = os.path.exists(homepage_template_path)
+
+        if content_homepage_exists and template_homepage_exists:
+            raise RuntimeError(
+                f"Conflict: both a content homepage (pages/index.*) and "
+                f"a template homepage ({homepage_template_path}) exist. "
+                f"Please remove one."
+            )
+        return content_homepage_exists
+
     def generate_site(self):
         """
         Generate the static site, including homepage, pages, posts, and tag pages.
@@ -273,7 +301,9 @@ class SimpleSiteGenerator:
         self.sort_posts()
         self.get_pages()
 
-        self.write_homepage(layout_path)
+        content_homepage_exists = self.check_homepage_paths()
+        if not content_homepage_exists:
+            self.write_homepage(layout_path)
 
         page_template_path = os.path.join(self.templates_dir, "page.html")
 
