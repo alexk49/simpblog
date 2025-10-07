@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import argparse
 import os
 import shutil
@@ -19,7 +20,7 @@ class HTMLFile(str):
         return obj
 
 
-class SimpleSiteGenerator:
+class Simplog:
     def __init__(
         self,
         posts_dir: str = "posts",
@@ -382,7 +383,7 @@ def inotifywait_exists() -> bool:
     return shutil.which("inotifywait") is not None
 
 
-def watch_with_inotify(dir_paths: dict[str, str], ssg: SimpleSiteGenerator):
+def watch_with_inotify(dir_paths: dict[str, str], simplog: Simplog):
     """Use inotifywait to rebuild when files change."""
     print("Watching for changes in pages/, posts/, templates/, and static/")
 
@@ -408,7 +409,7 @@ def watch_with_inotify(dir_paths: dict[str, str], ssg: SimpleSiteGenerator):
                 continue
             print(f"Change detected: {line}")
             try:
-                ssg.generate_site()
+                simplog.generate_site()
             except subprocess.CalledProcessError as e:
                 print(f"Build failed: {e}")
     except KeyboardInterrupt:
@@ -416,7 +417,7 @@ def watch_with_inotify(dir_paths: dict[str, str], ssg: SimpleSiteGenerator):
         process.terminate()
 
 
-def run_dev(dir_paths: dict[str, str], port: int, ssg: SimpleSiteGenerator):
+def run_dev(dir_paths: dict[str, str], port: int, simplog: Simplog):
     server_thread = threading.Thread(
         target=start_dev_server, args=(dir_paths["output_dir"], port), daemon=True
     )
@@ -424,7 +425,7 @@ def run_dev(dir_paths: dict[str, str], port: int, ssg: SimpleSiteGenerator):
 
     if inotifywait_exists():
         print("Detected inotifywait: enabling file watching\n")
-        watch_with_inotify(dir_paths, ssg)
+        watch_with_inotify(dir_paths, simplog)
     else:
         print("inotifywait not found. Skipping auto-rebuild.")
         print("Dev server running at http://localhost:8000 (Ctrl+C to stop)\n")
@@ -464,12 +465,23 @@ def set_arg_parser() -> argparse.ArgumentParser:
         default=8000,
         help="Port for the dev server (default: 8000)",
     )
+    parser.add_argument(
+        "--test",
+        action="store_true",
+        default=False,
+        help="Run tests",
+    )
     return parser
 
 
 def main():
     parser = set_arg_parser()
     args = parser.parse_args()
+
+    if args.test:
+        cmd = ["python", "-m", "unittest", "discover", "-v"]
+        subprocess.run(cmd, check=True)
+        return
 
     site_dir = os.path.abspath(args.site_dir)
 
@@ -483,7 +495,7 @@ def main():
 
     print(f"Building site from: {site_dir} to {dir_paths["output_dir"]}")
 
-    ssg = SimpleSiteGenerator(
+    simplog = Simplog(
         posts_dir=dir_paths["posts_dir"],
         pages_dir=dir_paths["pages_dir"],
         output_dir=dir_paths["output_dir"],
@@ -492,10 +504,11 @@ def main():
         full_rebuild=args.force,
     )
 
-    ssg.generate_site()
+    simplog.generate_site()
 
     if args.dev:
-        run_dev(dir_paths, args.port, ssg)
+        run_dev(dir_paths, args.port, simplog)
+
 
 
 if __name__ == "__main__":

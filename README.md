@@ -1,37 +1,42 @@
-# ssg
+# simplog
 
-Simple static site generator
+Simple static site generator that can be used to template the html/markdown for a simple blog or website.
 
 ## why would I use this?
 
-There's much better options, which you should probably use instead. This is just a simple python script, and that may well be its only appeal.
+There's much better options, which you should probably use instead. This is just a simple python script but that may well be its appeal.
+
+If all you need is basic html/markdown templating then simplog maybe of use or could maybe be a stop gap solution before you settle on a more feature complete static site generator.
 
 ## installation
 
 ```
-wget https://github.com/alexk49/ssg/blob/main/ssg.py
+wget https://github.com/alexk49/simplog/blob/main/simplog.py
 ```
 
 ## usage
 
 ```
-python ssg.py -h | --help
+python simplog.py -h | --help
 
 # pass path of site to build
-python ssg.py -s {site_dir} | --site-dir {site_dir}
+python simplog.py -s {site_dir} | --site-dir {site_dir}
 
 # force full rebuild of site
-python ssg.py --force
+python simplog.py --force
 
 # run build and start dev server
 # if inotifywait is available will watch for changes and reload
-python ssg.py --dev
+python simplog.py --dev
 
 # specify the port for dev server:
-python ssg.py --dev --port
+python simplog.py --dev --port
 ```
 
 ## directory structure
+
+Example files are included in the repo in pages, posts, static and templates for a quick start but these can just be used as a base or ignored completely!
+
 
 Expected folders are:
 
@@ -44,15 +49,15 @@ Pages/posts will accept .md or .html files.
 
 If you have a pages folder then you need a templates/page.html file, if you have a posts folder then you need a templates/post.html file.
 
-You can just have a pages dir or just have a posts dir or have both.
+You can just have a pages directory or just have a posts directory or have both.
 
-## templates dir
+## templates directory
 
 You must have a layout.html file, which will be used to base all over template files on.
 
-## posts/pages dirs
+## posts/pages directories
 
-In the post dir, you can add front matter to your files like:
+In the post directory, you can add front matter to your files like:
 
 ```
 ---
@@ -65,19 +70,35 @@ tags: test, example
 
 Tags are special to posts and if you make a templates/tag.html then html pages will be made containing all the posts that match the tag.
 
-In the pages dir, the only front matter needed is:
+In the pages directory, the only front matter needed is:
 
 ---
 title: About
 slug: about
 ---
 
-If use .html files in the pages or post dir then the url slug for a html file will be read from the file name.
+If use .html files in the pages or post directory then the url slug for a html file will be read from the file name.
 
-## static dir
+## static directory
 
-The static dir is for .css, .js and asset files. These are just copied across to the output folder.
+The static directory is for .css, .js and asset files. These are just copied across to the output folder.
 
-## output dir
+## homepage
+
+The homepage can be made with its own template by placing index.html into the templates directory, or it can use the page.html template by placing index.html or index.md into the pages directory.
+
+## output directory
 
 The built .html files will be generated in a directory called output. It will be built either in the directory that you can the script or in the directory you passed as site_dir.
+
+## dev server
+
+Running the build with the dev server will use python's inbuilt http server to serve the output directory on the localhost. Port 8000 is used by default but this can be changed.
+
+If inotifywait is installed then a rebuild will be triggered when changes are deteced in the pages, posts, static, and templates directories. Otherwise, the server will need to be manually restarted.
+
+On debian/ubuntu, inotifywait can be installed with:
+
+```
+sudo apt install inotify-tools
+```
