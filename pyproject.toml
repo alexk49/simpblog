@@ -1,5 +1,5 @@
 [project]
-name = "simplog"
+name = "simpblog"
 readme = "README.md"
 description = "Simple static site generator, for blogs and basic sites"
 authors = [
@@ -15,7 +15,7 @@ dependencies = [
 ]
 
 [project.scripts]
-"simplog" = "simplog:main"
+"simpblog" = "simpblog:main"
 
 [project.optional-dependencies]
 lint = [
@@ -31,7 +31,10 @@ ignore = ["E501"]
 [tool.mypy]
 ignore_missing_imports = true
 [build-system]
-requires = ["setuptools >= 64"]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+[tool.setuptools]
+py-modules = ["simpblog"]
 
 [project.urls]
-Homepage = "https://github.com/alexk49/simplog"
+Homepage = "https://github.com/alexk49/simpblog"

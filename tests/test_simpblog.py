@@ -6,7 +6,7 @@ from datetime import datetime
 from unittest.mock import MagicMock, patch
 from types import SimpleNamespace
 
-from simplog import HTMLFile, Simplog
+from simpblog import HTMLFile, simpblog
 
 
 class TestHTMLFile(unittest.TestCase):
@@ -18,7 +18,7 @@ class TestHTMLFile(unittest.TestCase):
         self.assertEqual(html.metadata, metadata)
 
 
-class TestSimplog(unittest.TestCase):
+class Testsimpblog(unittest.TestCase):
     def setUp(self):
         self.temp_dir = tempfile.mkdtemp()
         self.posts_dir = os.path.join(self.temp_dir, "posts")
@@ -33,7 +33,7 @@ class TestSimplog(unittest.TestCase):
         os.makedirs(self.static_dir)
         os.makedirs(self.output_dir)
 
-        self.gen = Simplog(
+        self.gen = simpblog(
             posts_dir=self.posts_dir,
             pages_dir=self.pages_dir,
             templates_dir=self.templates_dir,

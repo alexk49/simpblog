@@ -1,4 +1,4 @@
-# simplog
+# simpblog
 
 Simple static site generator that can be used to template the html/markdown for a simple blog or website.
 
@@ -6,35 +6,39 @@ Simple static site generator that can be used to template the html/markdown for 
 
 There's much better options, which you should probably use instead. This is just a simple python script but that may well be its appeal.
 
-If all you need is basic html/markdown templating then simplog maybe of use or could maybe be a stop gap solution before you settle on a more feature complete static site generator.
+If all you need is basic html/markdown templating then simpblog maybe of use or could maybe be a stop gap solution before you settle on a more feature complete static site generator.
 
 ## installation
 
 ```
 # just script
-wget https://github.com/alexk49/simplog/blob/main/simplog.py
+wget https://github.com/alexk49/simpblog/blob/main/simpblog.py
 
 # script with template site:
-git clone https://github.com/alexk49/simplog.git
+git clone https://github.com/alexk49/simpblog.git
+
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .
 ```
 
 ## usage
 
 ```
-python simplog.py -h | --help
+./simpblog.py -h | --help
 
 # pass path of site to build
-python simplog.py -s {site_dir} | --site-dir {site_dir}
+./simpblog.py -s {site_dir} | --site-dir {site_dir}
 
 # force full rebuild of site
-python simplog.py --force
+./simpblog.py --force
 
 # run build and start dev server
 # if inotifywait is available will watch for changes and reload
-python simplog.py --dev
+./simpblog.py --dev
 
 # specify the port for dev server:
-python simplog.py --dev --port
+./simpblog.py --dev --port
 ```
 
 ## directory structure

@@ -20,7 +20,7 @@ class HTMLFile(str):
         return obj
 
 
-class Simplog:
+class simpblog:
     def __init__(
         self,
         posts_dir: str = "posts",
@@ -383,7 +383,7 @@ def inotifywait_exists() -> bool:
     return shutil.which("inotifywait") is not None
 
 
-def watch_with_inotify(dir_paths: dict[str, str], simplog: Simplog):
+def watch_with_inotify(dir_paths: dict[str, str], simpblog: simpblog):
     """Use inotifywait to rebuild when files change."""
     print("Watching for changes in pages/, posts/, templates/, and static/")
 
@@ -409,7 +409,7 @@ def watch_with_inotify(dir_paths: dict[str, str], simplog: Simplog):
                 continue
             print(f"Change detected: {line}")
             try:
-                simplog.generate_site()
+                simpblog.generate_site()
             except subprocess.CalledProcessError as e:
                 print(f"Build failed: {e}")
     except KeyboardInterrupt:
@@ -417,7 +417,7 @@ def watch_with_inotify(dir_paths: dict[str, str], simplog: Simplog):
         process.terminate()
 
 
-def run_dev(dir_paths: dict[str, str], port: int, simplog: Simplog):
+def run_dev(dir_paths: dict[str, str], port: int, simpblog: simpblog):
     server_thread = threading.Thread(
         target=start_dev_server, args=(dir_paths["output_dir"], port), daemon=True
     )
@@ -425,7 +425,7 @@ def run_dev(dir_paths: dict[str, str], port: int, simplog: Simplog):
 
     if inotifywait_exists():
         print("Detected inotifywait: enabling file watching\n")
-        watch_with_inotify(dir_paths, simplog)
+        watch_with_inotify(dir_paths, simpblog)
     else:
         print("inotifywait not found. Skipping auto-rebuild.")
         print("Dev server running at http://localhost:8000 (Ctrl+C to stop)\n")
@@ -495,7 +495,7 @@ def main():
 
     print(f"Building site from: {site_dir} to {dir_paths["output_dir"]}")
 
-    simplog = Simplog(
+    simpblog = simpblog(
         posts_dir=dir_paths["posts_dir"],
         pages_dir=dir_paths["pages_dir"],
         output_dir=dir_paths["output_dir"],
@@ -504,10 +504,10 @@ def main():
         full_rebuild=args.force,
     )
 
-    simplog.generate_site()
+    simpblog.generate_site()
 
     if args.dev:
-        run_dev(dir_paths, args.port, simplog)
+        run_dev(dir_paths, args.port, simpblog)
 
 
 
