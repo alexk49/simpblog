@@ -22,12 +22,12 @@ class HTMLFile(str):
 class SimpleSiteGenerator:
     def __init__(
         self,
-        posts_dir="posts",
-        pages_dir="pages",
-        output_dir="output",
-        templates_dir="templates",
-        static_dir="static",
-        full_rebuild=False,
+        posts_dir: str = "posts",
+        pages_dir: str = "pages",
+        output_dir: str = "output",
+        templates_dir: str = "templates",
+        static_dir: str = "static",
+        full_rebuild: bool = False,
     ):
 
         self.full_rebuild = full_rebuild
@@ -41,8 +41,8 @@ class SimpleSiteGenerator:
         templateLoader = FileSystemLoader(searchpath=self.templates_dir)
         self.templates_env = Environment(loader=templateLoader)
 
-        self.posts = {}
-        self.pages = {}
+        self.posts: dict = {}
+        self.pages: dict = {}
 
     def get_posts(self):
         if not os.path.exists(self.posts_dir):
@@ -75,7 +75,7 @@ class SimpleSiteGenerator:
         sorted_posts = sorted(self.posts, key=self.get_post_date, reverse=True)
         self.posts = {post: self.posts[post] for post in sorted_posts}
 
-    def get_post_date(self, post):
+    def get_post_date(self, post: str) -> datetime:
         # Extracts and parses the date for sorting
         return datetime.strptime(self.posts[post].metadata["date"], "%Y-%m-%d")
 
@@ -103,7 +103,7 @@ class SimpleSiteGenerator:
 
             self.pages[page_file] = page_content
 
-    def render_page(self, page_key):
+    def render_page(self, page_key: str) -> tuple[str, str]:
         """
         render an individual static page - about etc
         """
@@ -118,7 +118,7 @@ class SimpleSiteGenerator:
         page_html = page_template.render(page=page_data)
         return page_metadata.get("slug", "page"), page_html
 
-    def render_homepage(self):
+    def render_homepage(self) -> str:
         """
         Create homepage, returns rendered html
         """
@@ -127,12 +127,11 @@ class SimpleSiteGenerator:
 
         return home_template.render(posts=posts_metadata)
 
-    def render_tag_page(self, tag):
+    def render_tag_page(self, tag: str) -> str:
         """
         Render a page for a specific tag, listing all posts with that tag.
 
-        :param tag: The tag to render the page for.
-        :return: Rendered HTML for the tag page.
+        And, return rendered HTML for the tag page.
         """
         tag_template = self.templates_env.get_template("tag.html")
         posts_with_tag = [
@@ -142,7 +141,7 @@ class SimpleSiteGenerator:
         ]
         return tag_template.render(tag=tag, posts=posts_with_tag)
 
-    def render_post_page(self, post_key):
+    def render_post_page(self, post_key: str) -> tuple[str, str]:
         """
         Render an individual post page.
 
@@ -190,7 +189,7 @@ class SimpleSiteGenerator:
                 if self.check_for_changes(src, dst):
                     shutil.copy2(src, dst)
 
-    def write_homepage(self, layout_path):
+    def write_homepage(self, layout_path: str):
         homepage_template_path = os.path.join(self.templates_dir, "index.html")
         if not os.path.exists(homepage_template_path):
             print(f"index.html page not found in {self.templates_dir}")
@@ -201,7 +200,7 @@ class SimpleSiteGenerator:
 
         self.write_file(homepage_output_path, home_html, source_paths=[homepage_template_path, layout_path])
 
-    def write_pages(self, page_template_path, layout_path):
+    def write_pages(self, page_template_path: str, layout_path: str):
         if not os.path.exists(page_template_path):
             print(f"no page template path at: {page_template_path}")
             return
@@ -223,7 +222,7 @@ class SimpleSiteGenerator:
             ]
             self.write_file(page_file_path, page_html, source_paths=source_paths)
 
-    def write_post_pages(self, post_template_path, layout_path):
+    def write_post_pages(self, post_template_path: str, layout_path: str):
         if not os.path.exists(post_template_path):
             print(f"no post template found at: {post_template_path}")
             return
@@ -242,7 +241,7 @@ class SimpleSiteGenerator:
 
             self.write_file(post_file_path, post_html, source_paths=source_paths)
 
-    def get_tags(self):
+    def get_tags(self) -> set:
         unique_tags = set()
         print("searching for tags")
 
@@ -253,7 +252,7 @@ class SimpleSiteGenerator:
         sorted_tags = sorted(unique_tags)
         return sorted_tags
 
-    def write_tag_pages(self, tags, layout_path):
+    def write_tag_pages(self, tags: set, layout_path: str):
         tag_template_path = os.path.join(self.templates_dir, "tag.html")
 
         for tag in tags:
@@ -262,12 +261,13 @@ class SimpleSiteGenerator:
             tag_file_path = os.path.join(self.output_dir, "tags", f"{tag}.html")
 
             # Check dependencies for tag pages — template, layout, and all posts
+            # as tags are generated from post front matter
             post_sources = [os.path.join(self.posts_dir, p) for p in self.posts]
             source_paths = [tag_template_path, layout_path] + post_sources
 
             self.write_file(tag_file_path, tag_html, source_paths=source_paths)
 
-    def check_homepage_paths(self):
+    def check_homepage_paths(self) -> bool:
         """
         homepage can be either templates/index.html or in pages
 
@@ -320,7 +320,7 @@ class SimpleSiteGenerator:
 
         print(f"Site generated with {len(self.posts)} posts, {len(tags)} tags.")
 
-    def write_file(self, file_path, content, source_paths=None):
+    def write_file(self, file_path: str, content: str, source_paths: list | str | None = None):
         """
         Write content to a file, creating directories as needed.
         Only writes if the source is newer (when source_paths are provided).
@@ -334,7 +334,7 @@ class SimpleSiteGenerator:
         with open(file_path, "w") as file:
             file.write(content)
 
-    def check_for_changes(self, source_paths, output_path):
+    def check_for_changes(self, source_paths: list | str | None, output_path: str) -> bool:
         """
         Check if output needs to be rebuilt based on modification times.
 
@@ -361,31 +361,30 @@ class SimpleSiteGenerator:
                 print(f"{src} is newer than {output_path}, rebuilding")
                 return True
 
-        # no rebuild needed
         return False
 
 
-def start_dev_server(directory, port=8000):
+def start_dev_server(directory: str, port: int = 8000):
     os.chdir(directory)
     handler = SimpleHTTPRequestHandler
     httpd = TCPServer(("localhost", port), handler)
 
-    print(f"Serving at http://localhost:{port} (Ctrl+C to stop)\n")
+    print(f"Serving at http://localhost:{port} (Ctrl+C to stop)")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
-        print("\nStopping server...")
+        print("Stopping server...")
     finally:
         httpd.server_close()
 
 
-def inotifywait_exists():
+def inotifywait_exists() -> bool:
     return shutil.which("inotifywait") is not None
 
 
-def watch_with_inotify(dir_paths, ssg):
+def watch_with_inotify(dir_paths: dict[str, str], ssg: SimpleSiteGenerator):
     """Use inotifywait to rebuild when files change."""
-    print("Watching for changes in pages/, posts/, templates/, and static/ ")
+    print("Watching for changes in pages/, posts/, templates/, and static/")
 
     watch_paths = [
         dir_paths[key]
@@ -417,8 +416,29 @@ def watch_with_inotify(dir_paths, ssg):
         process.terminate()
 
 
-def main():
+def run_dev(dir_paths: dict[str, str], port: int, ssg: SimpleSiteGenerator):
+    server_thread = threading.Thread(
+        target=start_dev_server, args=(dir_paths["output_dir"], port), daemon=True
+    )
+    server_thread.start()
+
+    if inotifywait_exists():
+        print("Detected inotifywait: enabling file watching\n")
+        watch_with_inotify(dir_paths, ssg)
+    else:
+        print("inotifywait not found. Skipping auto-rebuild.")
+        print("Dev server running at http://localhost:8000 (Ctrl+C to stop)\n")
+
+        try:
+            while server_thread.is_alive():
+                server_thread.join(1)
+        except KeyboardInterrupt:
+            print("\nStopping dev server...")
+
+
+def set_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Simple static site generator")
+
     parser.add_argument(
         "-s",
         "--site-dir",
@@ -444,6 +464,11 @@ def main():
         default=8000,
         help="Port for the dev server (default: 8000)",
     )
+    return parser
+
+
+def main():
+    parser = set_arg_parser()
     args = parser.parse_args()
 
     site_dir = os.path.abspath(args.site_dir)
@@ -470,25 +495,7 @@ def main():
     ssg.generate_site()
 
     if args.dev:
-        # Start HTTP server in background thread
-        server_thread = threading.Thread(
-            target=start_dev_server, args=(dir_paths["output_dir"], args.port), daemon=True
-        )
-        server_thread.start()
-
-        if inotifywait_exists():
-            print("Detected inotifywait: enabling file watching\n")
-            watch_with_inotify(dir_paths, ssg)
-        else:
-            print("inotifywait not found. Skipping auto-rebuild.")
-            print("You can install it with: sudo apt install inotify-tools")
-            print("Dev server running at http://localhost:8000 (Ctrl+C to stop)\n")
-
-            try:
-                while server_thread.is_alive():
-                    server_thread.join(1)
-            except KeyboardInterrupt:
-                print("\nStopping dev server...")
+        run_dev(dir_paths, args.port, ssg)
 
 
 if __name__ == "__main__":
