@@ -11,7 +11,11 @@ If all you need is basic html/markdown templating then simplog maybe of use or c
 ## installation
 
 ```
+# just script
 wget https://github.com/alexk49/simplog/blob/main/simplog.py
+
+# script with template site:
+git clone https://github.com/alexk49/simplog.git
 ```
 
 ## usage

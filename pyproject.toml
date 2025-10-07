@@ -2,6 +2,9 @@
 name = "simplog"
 readme = "README.md"
 description = "Simple static site generator, for blogs and basic sites"
+authors = [
+  { name="Alex Kennett", email="alex@kennett.dev" },
+]
 license = "MIT"
 license-files = ["LICENSE"]
 dynamic = ["version"]
@@ -29,3 +32,6 @@ ignore = ["E501"]
 ignore_missing_imports = true
 [build-system]
 requires = ["setuptools >= 64"]
+
+[project.urls]
+Homepage = "https://github.com/alexk49/simplog"
