@@ -14,9 +14,17 @@ If all you need is basic html/markdown templating then simpblog maybe of use or 
 # just script
 wget https://github.com/alexk49/simpblog/blob/main/simpblog.py
 
+# or through pip
+pip install simpblog
+```
+
+If you want the template site files, it will be best to clone the repo:
+
+```
 # script with template site:
 git clone https://github.com/alexk49/simpblog.git
 
+# set up script manually
 python -m venv .venv
 source .venv/bin/activate
 pip install -e .
