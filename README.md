@@ -80,10 +80,12 @@ Tags are special to posts and if you make a templates/tag.html then html pages w
 
 In the pages directory, the only front matter needed is:
 
+```yaml
 ---
 title: About
 slug: about
 ---
+```
 
 If use .html files in the pages or post directory then the url slug for a html file will be read from the file name.
 
