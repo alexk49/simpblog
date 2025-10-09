@@ -7,7 +7,7 @@ authors = [
 ]
 license = "MIT"
 license-files = ["LICENSE"]
-dynamic = ["version"]
+version = "0.1.0"
 requires-python = ">=3.10"
 dependencies = [
     "Jinja2==3.1.2",
@@ -17,11 +17,13 @@ dependencies = [
 
 [project.scripts]
 "simpblog" = "simpblog:main"
-
 [project.optional-dependencies]
 lint = [
-    "ruff==0.9.6",
-    "mypy==1.15.0",
+    "ruff",
+    "mypy",
+]
+dev = [
+    "twine",
 ]
 [tool.ruff]
 line-length = 120
