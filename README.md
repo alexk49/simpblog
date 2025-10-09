@@ -67,7 +67,7 @@ You must have a layout.html file, which will be used to base all over template f
 
 In the post directory, you can add front matter to your files like:
 
-```
+```yaml
 ---
 title: Example post
 slug: test
