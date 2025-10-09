@@ -2,3 +2,4 @@ output
 *.egg*
 build
 dist
+.pypirc
