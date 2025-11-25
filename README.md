@@ -12,7 +12,8 @@ If all you need is basic html/markdown templating then simpblog maybe of use or 
 
 ```
 # just script
-https://raw.githubusercontent.com/alexk49/simpblog/refs/heads/main/simpblog.py
+wget https://raw.githubusercontent.com/alexk49/simpblog/refs/heads/main/simpblog.py
+chmod +x simpblog.py
 
 # or through pip
 pip install simpblog
