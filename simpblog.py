@@ -20,7 +20,7 @@ class HTMLFile(str):
         return obj
 
 
-class simpblog:
+class SimpBlog:
     def __init__(
         self,
         posts_dir: str = "posts",
@@ -383,7 +383,7 @@ def inotifywait_exists() -> bool:
     return shutil.which("inotifywait") is not None
 
 
-def watch_with_inotify(dir_paths: dict[str, str], simpblog: simpblog):
+def watch_with_inotify(dir_paths: dict[str, str], simpblog: SimpBlog):
     """Use inotifywait to rebuild when files change."""
     print("Watching for changes in pages/, posts/, templates/, and static/")
 
@@ -417,7 +417,7 @@ def watch_with_inotify(dir_paths: dict[str, str], simpblog: simpblog):
         process.terminate()
 
 
-def run_dev(dir_paths: dict[str, str], port: int, simpblog: simpblog):
+def run_dev(dir_paths: dict[str, str], port: int, simpblog: SimpBlog):
     server_thread = threading.Thread(
         target=start_dev_server, args=(dir_paths["output_dir"], port), daemon=True
     )
@@ -495,7 +495,7 @@ def main():
 
     print(f"Building site from: {site_dir} to {dir_paths["output_dir"]}")
 
-    simpblog = simpblog(
+    simpblog = SimpBlog(
         posts_dir=dir_paths["posts_dir"],
         pages_dir=dir_paths["pages_dir"],
         output_dir=dir_paths["output_dir"],
